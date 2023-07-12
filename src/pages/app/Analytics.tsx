@@ -19,7 +19,7 @@ import {
   Empty} from 'antd';
 
 import { AppstoreOutlined, BarsOutlined, DownloadOutlined, FileSyncOutlined } from '@ant-design/icons';
-import { donortypesAtom, indicationsAtom, reportAtom, centersAtom, agegroupAtom } from '../../_state';
+import { donortypesAtom, indicationsAtom, reportAtom, reportlistAtom, centersAtom, agegroupAtom } from '../../_state';
 import { useRecoilValue } from 'recoil';
 import { useDataActions } from '../../_actions';
 import { BuildCascader, BuildSelector } from '../../_functions';
@@ -36,7 +36,7 @@ const Analytics = () => {
   const agegroup = useRecoilValue(agegroupAtom)
   const donortypes = useRecoilValue(donortypesAtom)
   const listofcenters = useRecoilValue(centersAtom)
-
+  const reportlist= useRecoilValue(reportlistAtom)
   const report = useRecoilValue(reportAtom);
   const [form] = Form.useForm()
 
@@ -45,14 +45,12 @@ const Analytics = () => {
   // render options
   const [sheetLoading, setSheetLoading] = useState(false); // trigger, if the sheet is loading
 
-  // conditions
-  // const [questionnaireSelected, setQuestionnaireSelected] = useState( false )
-
   // data to use
   const [numTeamsReported, setNumTeamsReported] = useState(null);
   const [listofselectedcenters, setListofselectedcenters] = useState([]);
   // trigger, if the sheet is editable
   const [viewsheet, setViewsheet] = useState(null);
+
   // const obj = fromList ? (location.state.obj):({}) // if coming from TC list then take center from object, otherwise keep {}
 
   const cascaderoptions = BuildCascader()
@@ -65,12 +63,12 @@ const Analytics = () => {
 //   setQuestionnaireSelected(true);
 // }
 
-function onChange(){
+function resetViewsheet(){
   setViewsheet(null)
 }
 
 function onCenterChange(value: string | any[], selectedOptions: any) {
-  onChange()
+  resetViewsheet()
   if (value && value.length > 0) {
     var coi_ids: any[] = []
     // extract only selected center id's from selected options
@@ -134,9 +132,6 @@ const emptySheet = () => {
 
     function calculate_all_totals(currentSheet: { [x: string]: any; }){
       // Take sheet and take out index of given values
-  
-      // Get all totals to calculate with its values
-      //TODO: Filter totals that have no value in the sheet -> as it is assumend, that the rest of this is reported
   
       // get all donortypes that are totals / aggregates and write them to total_don
       const li_donortype_totals = donortypes.filter(d => d.type === 'total')
@@ -225,11 +220,9 @@ const emptySheet = () => {
         reportStatus: report.report_status
       })
     } catch (error) {
-      console.log("Nothing has been reported.")
-      message.info("Nothing has been reported.")
       setViewsheet(emptySheet);
       setNumTeamsReported(0);
-      onChange();
+      resetViewsheet();
     }
     setSheetLoading(false);
   }
@@ -317,7 +310,7 @@ const emptySheet = () => {
                 <Select
                   placeholder="Select a Questionnaire"
                   // optionFilterProp="children"
-                  // onChange={onQuestionnaireChange}
+                  onChange={() => resetViewsheet}
                   // filterOption={(input, option) =>
                   //   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   // }
@@ -332,7 +325,7 @@ const emptySheet = () => {
             </Form.Item>
           </Col>
       </Row>
-{/* Centers of Interest */}
+    {/* Centers of Interest */}
       <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
             <Col className="gutter-row" span={12}>
               <Form.Item
@@ -351,7 +344,7 @@ const emptySheet = () => {
               </Form.Item>
             </Col>
       </Row>
-{/* Year & AgeGroup Selector */}
+    {/* Year & AgeGroup Selector */}
       <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
       <Col className="gutter-row" span={6}>
           <Form.Item
@@ -374,7 +367,7 @@ const emptySheet = () => {
                 mode="multiple"
                 placeholder="Select an Age Group"
                 optionFilterProp="children"
-                onChange={onChange}
+                onChange={resetViewsheet}
                 // value={patientAgeGroup}
                 // filterOption={(input, option) =>
                 //   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -391,7 +384,7 @@ const emptySheet = () => {
             initialValue={'aggregate'}
             >
             <Segmented
-              onChange={onChange}
+              onChange={() => resetViewsheet}
               options={[
                 {
                   label: 'Aggregate',
@@ -427,7 +420,6 @@ const emptySheet = () => {
                   //   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   // }
                   options={BuildSelector(indications)}
-                  disabled={form.getFieldValue("result_type") === 'aggregate'}
                 />
             </Form.Item>
           </Col>
@@ -446,7 +438,6 @@ const emptySheet = () => {
                   //   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   // }
                   options={BuildSelector(donortypes)}
-                  disabled={form.getFieldValue("result_type") === 'aggregate'}
                 />
             </Form.Item>
           </Col>
@@ -461,7 +452,8 @@ const emptySheet = () => {
     </Form>
     {/* </div> */}
     {/* <Divider/> */}
-    {viewsheet? (<>
+    {(viewsheet && form.getFieldValue('report_type') === 'aggregate') ? (
+        <>
         <Row wrap={false}>
           <Col span={3}>
           </Col>
@@ -501,8 +493,7 @@ const emptySheet = () => {
           <Divider />
           </>
           ) : <Empty description={false} />}
-
-    </>
+          </>
    );
  };
 
